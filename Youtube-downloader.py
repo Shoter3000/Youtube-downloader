@@ -50,6 +50,7 @@ get_link = input("Enter the URL of the video or playlist: ")
 print("")
 
 #get path
+root.iconbitmap("icon_logo.ico")
 user_path = filedialog.askdirectory(initialdir="/", title="Select the location where the files will be SAVED!")
 print("Files will be saved in "+user_path)
 print("")

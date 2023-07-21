@@ -22,9 +22,9 @@ root.withdraw()
 
 def download_file():
     #download video
-    mp4_video = YouTube(get_link)
-    #vid_clip = VideoFileClip(mp4_video)
-    mp4_video.close()
+    mp4_video = YouTube(get_link).streams.get_highest_resolution().download()
+    vid_clip = VideoFileClip(mp4_video)
+    vid_clip.close()
     #move to selected directory
     shutil.move(mp4_video, user_path)
 

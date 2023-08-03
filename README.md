@@ -1,6 +1,6 @@
 # Youtube Downloader
 
-The following program is a Python program that allows users to download videos and audio files from YouTube. It utilizes various Python libraries like `pytube`, `moviepy`, `eyed3`, and `tkinter`. The script provides options for downloading individual videos, audio files, or entire playlists from YouTube.
+The following program is a Python program that allows users to download videos and audio files from YouTube. It utilizes various Python libraries like `pytube`, `moviepy`, `eyed3`, and `tkinter`. The program provides options for downloading individual videos, audio files, or entire playlists from YouTube.
 
 ## Dependencies
 
@@ -11,15 +11,15 @@ Before running the program, ensure you have the following dependencies installed
 - `eyed3`: A library for working with audio file metadata.
 - `tkinter`: A standard Python interface for creating graphical user interfaces (GUIs).
 
-You can install these dependencies using `pip`:
+You can install these dependencies using `pip`. Run the following command in the terminal after navigating to the project's directory:
 
 ```
-pip install pytube moviepy eyed3
+pip install -r requirements.txt
 ```
 
-## Script Explanation
+## program Explanation
 
-The script starts by importing the necessary libraries and creating some global variables. The main functionalities are divided into several functions, each handling a specific task.
+The program starts by importing the necessary libraries and creating some global variables. The main functionalities are divided into several functions, each handling a specific task.
 
 1. **Download Video Function (`download_file`):**
    This function downloads a video from the given URL using the `pytube` library. It then moves the downloaded video to the selected directory using the `shutil` library.
@@ -37,18 +37,18 @@ The script starts by importing the necessary libraries and creating some global 
    This function checks whether the provided URL is a valid YouTube video or playlist URL using regular expressions. It returns a boolean value indicating whether the URL is valid and whether it corresponds to a video or playlist.
 
 6. **Main Execution:**
-   The script starts by prompting the user to input the YouTube URL and the location where the downloaded files will be saved. It then asks the user to select one of the three options: Download Video, Download Audio, or Download Playlist. Based on the user's selection, the respective function is called to perform the download.
+   The program starts by prompting the user to input the YouTube URL and the location where the downloaded files will be saved. It then asks the user to select one of the three options: Download Video, Download Audio, or Download Playlist. Based on the user's selection, the respective function is called to perform the download.
 
 ## How to Use
 
-1. Run the script.
+1. Run the program.
 2. Input the YouTube URL when prompted.
 3. Select the location where the downloaded files will be saved using the file dialog.
 4. Choose one of the three options: Download Video, Download Audio, or Download Playlist.
-5. If downloading audio or a playlist, the script will prompt whether to include author metadata for the audio files.
+5. If downloading audio or a playlist, the program will prompt whether to include author metadata for the audio files.
 6. The download progress will be displayed for each video or audio file.
-7. Once the download is complete, the script will print "Download complete" or "Download complete!!!" depending on the chosen option.
+7. Once the download is complete, the program will print "Download complete" or "Download complete!!!" depending on the chosen option.
 
-**Note:** The script is limited to the functionalities provided by the `pytube`, `moviepy`, and `eyed3` libraries. If there are any changes to YouTube's website structure or API, the script might require updates to function correctly.
+**Note:** The program is limited to the functionalities provided by the `pytube`, `moviepy`, and `eyed3` libraries. If there are any changes to YouTube's website structure or API, the program might require updates to function correctly.
 
-Remember to comply with YouTube's terms of service and respect copyright rules when using this script. Only download content for which you have the necessary permissions or rights.
+Remember to comply with YouTube's terms of service and respect copyright rules when using this program. Only download content for which you have the necessary permissions or rights.

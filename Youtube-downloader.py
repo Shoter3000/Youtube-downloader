@@ -1,39 +1,105 @@
 from pytube import YouTube
 from moviepy import *
 from moviepy.editor import VideoFileClip
+from moviepy.editor import AudioFileClip
 import shutil
 from pathlib import Path
 import re
 from pytube import Playlist
-import moviepy.editor as mp
-import tkinter as tk
 import eyed3
 import os
-from os import path
 from tkinter import filedialog
 from tkinter import Tk
-
+from pytube.cli import on_progress
+import sys
 
 var1 = 0
+var = 0
 
 # Create an instance of Tkinter
 root = Tk()
 root.withdraw()
 
+
 def download_file():
+    print()
     #download video
-    mp4_video = YouTube(get_link).streams.get_highest_resolution().download()
+    mp4_video = YouTube(get_link, on_progress_callback=on_progress).streams.get_highest_resolution().download()
     vid_clip = VideoFileClip(mp4_video)
     vid_clip.close()
     #move to selected directory
     shutil.move(mp4_video, user_path)
+    # Update the progress bar
+    print("\rDownload complete!  ")
 
 
 def download_file_mp3():
-    print
+    #download video
+    mp3_audio = YouTube(get_link, on_progress_callback=on_progress).streams.filter(only_audio=True).first().download()
+    audio_clip = AudioFileClip(mp3_audio)
+    #getting name
+    full_file_name = os.path.basename(mp3_audio)
+    file_name = Path(full_file_name).stem
+    #converting
+    mp3_converted = f'{file_name}.mp3'
+    audio_clip.write_audiofile(mp3_converted)
+    #getting metadata
+    if var1 == 1:
+        channel_name = YouTube(get_link).author
+        substring = " - Topic"
+        if substring in channel_name: #delitig " - Topic"
+            channel_name = channel_name.replace(" - Topic", "")
+        #modifying artist
+        audioFile = eyed3.load(mp3_converted)
+        audioFile.tag.artist = channel_name
+        audioFile.tag.save()
+    #move to selected directory, delete mp4 file
+    shutil.move(mp3_converted, user_path)
+    audio_clip.close()
+    os.remove(full_file_name)
+    print("Download complete!!!")
 
 def download_playlist():
-    print
+    #get url for download
+    playlist = Playlist(get_link)
+    playlsit_name = playlist.title
+    #creating folder
+    main_dir = user_path + "\\" + playlsit_name
+
+    if os.path.exists(main_dir):
+        print("Error: Playlist folder already exists")
+    else:
+        os.mkdir(main_dir,mode = 0o666)
+        videos_num = len(playlist.video_urls)
+    #download playlist
+    n=0
+    for url in playlist:
+        YouTube(url).streams.filter(only_audio=True).first().download(main_dir)
+        #counting
+        for files in os.listdir(main_dir):
+            if files.endswith('.mp4'):
+                n=n+1
+                print("Prenašanje...    " + str(n) + "/" + str(videos_num))        
+        for file in os.listdir(main_dir):
+            if re.search('mp4', file):
+                mp4_path = os.path.join(main_dir,file)
+                mp3_path = os.path.join(main_dir,os.path.splitext(file)[0]+'.mp3')
+                new_file = AudioFileClip(mp4_path)
+                new_file.write_audiofile(mp3_path)
+                #remove mp4
+                os.remove(mp4_path)
+                #adding metadata
+                if var1 == 1:
+                    full_file_name = os.path.basename(mp3_path)
+                    file_name = Path(full_file_name).stem
+                    channel_name = YouTube(url).author
+                    substring = " - Topic"
+                    if substring in channel_name:
+                        channel_name = channel_name.replace(" - Topic", "")
+                    audioFile = eyed3.load(mp3_path)
+                    audioFile.tag.artist = channel_name
+                    audioFile.tag.title = file_name
+                    audioFile.tag.save()
 
 
 def include_author_metadata():
@@ -42,12 +108,39 @@ def include_author_metadata():
     else:
         return False
 
+def valid_youtube_url(url):
+    # Regular expression to validate YouTube video and playlist URLs
+    youtube_regex = (
+        r"(?:https?:\/\/)?(?:www\.)?"
+        "(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)"
+        "([^\"\?\/\s]{11})"  # Video ID
+        "|"
+        "(?:youtube\.com\/(?:[^\/]+\/)?(?:playlist|list)\/|youtu\.be\/)"
+        "([^\"\?\/\s]{34})"  # Playlist ID
+    )
+    # Compile the regular expression
+    regex = re.compile(youtube_regex)
+    # Check if the provided URL matches the YouTube URL pattern
+    match = regex.match(url)
+    if match:
+        is_video = bool(match.group(1))  # Check if the first capturing group has a value (video ID)
+        return True, is_video
+    else:
+        return False, False
+
+
+
 print("*********************Youtube Downloader************************")
 print("\n")
 
 #get url
 get_link = input("Enter the URL of the video or playlist: ")
-print("")
+# Validate the URL
+if valid_youtube_url(get_link):
+    print("")
+else:
+    print("The provided URL is not a valid YouTube URL.")
+    sys.exit()
 
 #get path
 root.iconbitmap("icon_logo.ico")
@@ -57,25 +150,29 @@ print("")
 
 
 # Ask user for download option
-download_option = input("Select an option:\n1 Download Video\n2 Download Audio\n3 Download Playlist\nEnter the number: ")
+download_option = input("Select an option:\n1 Download Video\n2 Download Audio\n3 Download Playlist\n\nEnter the number: ")
 
 # Handle user selection
 if download_option == "1":
     download_file()
 elif download_option == "2":
-    download_file_mp3()
     if include_author_metadata():
         print("Author metadata will be included for audio files.")
+        print("")
         var1 = 1
     else:
         print("Author metadata will not be included for audio files.")
+        print("")
+    download_file_mp3()    
 elif download_option == "3":
-    download_playlist()
     if include_author_metadata():
         print("Author metadata will be included for playlist videos.")
+        print("")
         var1 = 1
     else:
         print("Author metadata will not be included for playlist videos.")
+        print("")
+    download_playlist()    
 else:
     print("Invalid option selected.")
 

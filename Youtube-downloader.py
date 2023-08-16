@@ -100,6 +100,7 @@ def download_playlist():
                     audioFile.tag.artist = channel_name
                     audioFile.tag.title = file_name
                     audioFile.tag.save()
+    print("Download complete!!!")
 
 
 def include_author_metadata():

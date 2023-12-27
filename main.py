@@ -123,29 +123,6 @@ def include_author_metadata():
     else:
         return False
 
-def valid_youtube_url(url):
-    # Regular expression to validate YouTube video and playlist URLs
-    youtube_regex = (
-        r"(?:https?:\/\/)?(?:www\.)?"
-        "(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)"
-        "([^\"\?\/\s]{11})"  # Video ID
-        "|"
-        "(?:youtube\.com\/(?:[^\/]+\/)?(?:playlist|list)\/|youtu\.be\/)"
-        "([^\"\?\/\s]{34})"  # Playlist ID
-    )
-    
-    # Compile the regular expression
-    regex = re.compile(youtube_regex)
-    
-    # Check if the provided URL matches the YouTube URL pattern
-    match = regex.match(url)
-    
-    if match:
-        is_video = bool(match.group(1))  # Check if the first capturing group has a value (video ID)
-        is_playlist = bool(match.group(2))  # Check if the second capturing group has a value (playlist ID)
-        return is_video, is_playlist
-    else:
-        return False, False
 
 
 
@@ -154,12 +131,6 @@ print("\n")
 
 #get url
 get_link = input("Enter the URL of the video or playlist: ")
-# Validate the URL
-if valid_youtube_url(get_link):
-    print("")
-else:
-    print("The provided URL is not a valid YouTube URL.")
-    sys.exit()
 
 #get path
 root.iconbitmap("icon_logo.ico")

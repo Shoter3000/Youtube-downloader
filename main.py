@@ -52,6 +52,7 @@ def download_file_mp3():
         #modifying artist
         audioFile = eyed3.load(mp3_converted)
         audioFile.tag.artist = channel_name
+        audioFile.tag.title = file_name
         audioFile.tag.save()
     #move to selected directory, delete mp4 file
     shutil.move(mp3_converted, user_path)

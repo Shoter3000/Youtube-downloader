@@ -1,169 +1,128 @@
-from pytube import YouTube
-from moviepy import *
-from moviepy.editor import VideoFileClip
-from moviepy.editor import AudioFileClip
+from pytube import YouTube, Playlist
+from pytube.cli import on_progress
+from moviepy.editor import VideoFileClip, AudioFileClip
 import shutil
 from pathlib import Path
 import re
-from pytube import Playlist
 import eyed3
 import os
-from tkinter import filedialog
-from tkinter import Tk
-from pytube.cli import on_progress
-import sys
+from tkinter import filedialog, Tk
 
 var1 = 0
-var = 0
 
-# Create an instance of Tkinter
 root = Tk()
 root.withdraw()
 
+def download_video(video_url, download_path):
+    try:
+        yt = YouTube(video_url, on_progress_callback=on_progress)
+        streams = yt.streams.filter(progressive=True)
+        stream_list = list(enumerate([f"{stream.resolution} - {stream.mime_type}" for stream in streams]))
+        
+        print("Available resolutions:")
+        for i, stream in stream_list:
+            print(f"{i}. {stream}")
+        
+        resolution_choice = int(input("Enter the number of the desired resolution: "))
+        chosen_stream = streams[resolution_choice]
+        
+        mp4_video = chosen_stream.download()
+        vid_clip = VideoFileClip(mp4_video)
+        vid_clip.close()
+        shutil.move(mp4_video, download_path)
+        print("\rDownload complete!  ")
+    except Exception as e:
+        print(f"Error downloading video: {e}")
 
-def download_file():
-    print()
-    #download video
-    mp4_video = YouTube(get_link, on_progress_callback=on_progress).streams.get_highest_resolution().download()
-    vid_clip = VideoFileClip(mp4_video)
-    vid_clip.close()
-    #move to selected directory
-    shutil.move(mp4_video, user_path)
-    # Update the progress bar
-    print("\rDownload complete!  ")
+def download_audio(video_url, download_path, include_metadata):
+    try:
+        mp3_audio = YouTube(video_url, on_progress_callback=on_progress).streams.filter(only_audio=True).first().download()
+        audio_clip = AudioFileClip(mp3_audio)
+        full_file_name = os.path.basename(mp3_audio)
+        file_name = Path(full_file_name).stem
+        mp3_converted = f'{file_name}.mp3'
+        audio_clip.write_audiofile(mp3_converted)
+        
+        if include_metadata:
+            add_metadata(mp3_converted, video_url, file_name)
+        
+        shutil.move(mp3_converted, download_path)
+        audio_clip.close()
+        os.remove(full_file_name)
+        print("Download complete!!!")
+    except Exception as e:
+        print(f"Error downloading audio: {e}")
 
+def add_metadata(file_path, video_url, file_name):
+    try:
+        channel_name = YouTube(video_url).author.replace(" - Topic", "")
+        audio_file = eyed3.load(file_path)
+        audio_file.tag.artist = channel_name
+        audio_file.tag.title = file_name
+        audio_file.tag.save()
+    except Exception as e:
+        print(f"Error adding metadata: {e}")
 
-def download_file_mp3():
-    #download video
-    mp3_audio = YouTube(get_link, on_progress_callback=on_progress).streams.filter(only_audio=True).first().download()
-    audio_clip = AudioFileClip(mp3_audio)
-    #getting name
-    full_file_name = os.path.basename(mp3_audio)
-    file_name = Path(full_file_name).stem
-    #converting
-    mp3_converted = f'{file_name}.mp3'
-    audio_clip.write_audiofile(mp3_converted)
-    #getting metadata
-    if var1 == 1:
-        channel_name = YouTube(get_link).author
-        substring = " - Topic"
-        if substring in channel_name: #delitig " - Topic"
-            channel_name = channel_name.replace(" - Topic", "")
-        #modifying artist
-        audioFile = eyed3.load(mp3_converted)
-        audioFile.tag.artist = channel_name
-        audioFile.tag.title = file_name
-        audioFile.tag.save()
-    #move to selected directory, delete mp4 file
-    shutil.move(mp3_converted, user_path)
-    audio_clip.close()
-    os.remove(full_file_name)
-    print("Download complete!!!")
-
-def download_playlist():
-    #get url for download
-    playlist = Playlist(get_link)
-    playlsit_name = playlist.title
-    #creating folder
-    main_dir = user_path + "\\" + playlsit_name
-    download_existing_videos = 0
-
-    if not os.path.isdir(main_dir): # Makes a download path if there isn't one
-        os.makedirs(main_dir)
-        print("Download folder for the playlist has been created!")
-    elif os.path.isdir(main_dir):
-        overwrite = input("Do you want to overwrite existing files? (y/n): ")
-        print("")
-        if  overwrite in ["y", "Y", "yes"]:
-            download_existing_videos = 1
-    videos_num = len(playlist.video_urls)
-    #download playlist
-    n=0
-    for url in playlist:
-        YouTube(url).streams.filter(only_audio=True).first().download(main_dir)
-        #counting
-        for files in os.listdir(main_dir):
-            if files.endswith('.mp4'):
-                n=n+1
-                print("Prenašanje...    " + str(n) + "/" + str(videos_num))  
-        if download_existing_videos == 1:
+def download_playlist(playlist_url, download_path, include_metadata):
+    try:
+        playlist = Playlist(playlist_url)
+        playlist_name = playlist.title
+        main_dir = os.path.join(download_path, playlist_name)
+        
+        if not os.path.isdir(main_dir):
+            os.makedirs(main_dir)
+            print("Download folder for the playlist has been created!")
+        else:
+            overwrite = input("Do you want to overwrite existing files? (y/n): ").lower()
+            if overwrite not in ["y", "yes"]:
+                return
+        
+        for video in playlist.videos:
+            video.streams.filter(only_audio=True).first().download(main_dir)
             for file in os.listdir(main_dir):
-                if file.lower().endswith('.mp3'):
-                    mp3_base_name = os.path.splitext(file)[0]
-                    mp4_path = os.path.join(main_dir, f"{mp3_base_name}.mp4")
-                    if os.path.exists(mp4_path):
-                        os.remove(mp4_path)
-                        print(f"Skipping: {file}")
-
-        for file in os.listdir(main_dir):
-            if re.search('mp4', file):
-                mp4_path = os.path.join(main_dir,file)
-                mp3_path = os.path.join(main_dir,os.path.splitext(file)[0]+'.mp3')
-                new_file = AudioFileClip(mp4_path)
-                new_file.write_audiofile(mp3_path)
-                #remove mp4
-                os.remove(mp4_path)
-                #adding metadata
-                if var1 == 1:
-                    full_file_name = os.path.basename(mp3_path)
-                    file_name = Path(full_file_name).stem
-                    channel_name = YouTube(url).author
-                    substring = " - Topic"
-                    if substring in channel_name:
-                        channel_name = channel_name.replace(" - Topic", "")
-                    audioFile = eyed3.load(mp3_path)
-                    audioFile.tag.artist = channel_name
-                    audioFile.tag.title = file_name
-                    audioFile.tag.save()
-    print("Download complete!!!")
-
+                if re.search('mp4', file):
+                    mp4_path = os.path.join(main_dir, file)
+                    mp3_path = os.path.join(main_dir, os.path.splitext(file)[0] + '.mp3')
+                    with AudioFileClip(mp4_path) as new_file:
+                        new_file.write_audiofile(mp3_path)
+                    os.remove(mp4_path)
+                    
+                    if include_metadata:
+                        full_file_name = os.path.basename(mp3_path)
+                        file_name = Path(full_file_name).stem
+                        add_metadata(mp3_path, video.watch_url, file_name)
+                    
+        print("Download complete!!!")
+    except Exception as e:
+        print(f"Error downloading playlist: {e}")
 
 def include_author_metadata():
-    if input("Do you want to include author metadata for audio files? (Y/N): ").lower() == 'y':
-        return True
+    return input("Do you want to include author metadata for audio files? (Y/N): ").lower() == 'y'
+
+def main():
+    print("*********************YouTube Downloader************************\n")
+    get_link = input("Enter the URL of the video or playlist: ")
+    root.iconbitmap("icon_logo.ico")
+    user_path = filedialog.askdirectory(initialdir="/", title="Select the location where the files will be SAVED!")
+    print(f"Files will be saved in {user_path}\n")
+    
+    download_option = input("Select an option:\n1. Download Video\n2. Download Audio\n3. Download Playlist\n\nEnter the number: ")
+    print("")
+    
+    if download_option == "1":
+        download_video(get_link, user_path)
+    elif download_option == "2":
+        var1 = include_author_metadata()
+        if var1:
+            print("Author metadata will be included for audio files.\n")
+        download_audio(get_link, user_path, var1)
+    elif download_option == "3":
+        var1 = include_author_metadata()
+        if var1:
+            print("Author metadata will be included for playlist videos.\n")
+        download_playlist(get_link, user_path, var1)
     else:
-        return False
+        print("Invalid option selected.")
 
-
-
-
-print("*********************Youtube Downloader************************")
-print("\n")
-
-#get url
-get_link = input("Enter the URL of the video or playlist: ")
-
-#get path
-root.iconbitmap("icon_logo.ico")
-user_path = filedialog.askdirectory(initialdir="/", title="Select the location where the files will be SAVED!")
-print("Files will be saved in "+user_path)
-print("")
-
-
-# Ask user for download option
-download_option = input("Select an option:\n1 Download Video\n2 Download Audio\n3 Download Playlist\n\nEnter the number: ")
-print("")
-# Handle user selection
-if download_option == "1":
-    download_file()
-elif download_option == "2":
-    if include_author_metadata():
-        print("Author metadata will be included for audio files.")
-        print("")
-        var1 = 1
-    else:
-        print("Author metadata will not be included for audio files.")
-        print("")
-    download_file_mp3()    
-elif download_option == "3":
-    if include_author_metadata():
-        print("Author metadata will be included for playlist videos.")
-        print("")
-        var1 = 1
-    else:
-        print("Author metadata will not be included for playlist videos.")
-        print("")
-    download_playlist()    
-else:
-    print("Invalid option selected.")
-
+if __name__ == "__main__":
+    main()
